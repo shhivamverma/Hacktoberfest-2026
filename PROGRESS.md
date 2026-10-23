@@ -5,8 +5,8 @@
 | Phase | Description | Status | Gate Tests | Key Numbers / Measurements |
 |---|---|---|---|---|
 | **Phase 0** | Environment, Tools & Raw Data Prep | **GREEN (PASS)** | ollama, graphify, curl embed, curl chat, click extract | RAM: 8GB, CPU: Ryzen 3 7320U, Graphify: 18.8s (click), qwen3:1.7b: 11.89 tok/s, qwen3:4b: 4.39 tok/s |
-| **Phase 1** | Skeleton, Graphify Adapter, Netguard, LLM Client | In Progress | `pytest tests/test_p1_*.py` | - |
-| **Phase 2** | Hints, Retrieval, Thinnest E2E Flow | Pending | `pytest tests/test_p2_*.py` | - |
+| **Phase 1** | Skeleton, Graphify Adapter, Netguard, LLM Client | **GREEN (PASS)** | 8/8 tests in `tests/test_p1_*.py` | 54 nodes & 74 edges in fixture, netguard blocks 100% external, doctor writes RUN_ENV.json |
+| **Phase 2** | Hints, Retrieval, Thinnest E2E Flow | Next | `pytest tests/test_p2_*.py` | - |
 | **Phase 3** | Graph Intelligence: PageRank, Blast Radius, Tests Finder, Tool Trace | Pending | `pytest tests/test_p3_*.py` | - |
 | **Phase 4** | LLM Layer with Guardrails & Abstain | Pending | `pytest tests/test_p4_*.py tests/test_policy.py` | - |
 | **Phase 5** | Evaluation & Proof (Benchmark & Ablation) | Pending | `pytest tests/test_p5_*.py` | - |
@@ -15,11 +15,34 @@
 
 ---
 
+## Phase 1 Probe Graph Output
+
+### Probe Report on Mini Repo Fixture (`tests/fixtures/mini_repo/graphify-out/graph.json`)
+- **Top-level keys**: `['directed', 'multigraph', 'graph', 'nodes', 'links', 'hyperedges', 'built_at_commit']`
+- **Node count**: 54
+- **Edge count**: 74
+- **Node keys**: `['_callable', '_origin', 'community', 'file_type', 'id', 'label', 'norm_label', 'source_file', 'source_location']`
+- **Relation types and counts**:
+  - `calls`: 13
+  - `imports`: 9
+  - `imports_from`: 6
+  - `references`: 1
+  - `contains`: 21
+  - `rationale_for`: 24
+- **Line info**: extracted via AST span locator (`app/utils.py`, `app/tokens.py`, `app/passwords.py`, `app/billing.py`, `app/auth.py`).
+
+### Probe Report on Click (`bench/repos/click/graphify-out/graph.json`)
+- **Node count**: 3,106
+- **Edge count**: 6,056
+- **Relation types**: `{'calls': 1082, 'contains': 1627, 'references': 953, 'depends_on': 10, 're_exports': 8, 'imports': 432, 'imports_from': 158, 'inherits': 36, 'method': 418, 'rationale_for': 591, 'indirect_call': 464, 'uses': 277}`
+
+---
+
 ## Phase 0 Notes & Environment Disclosure
 
 - **Operating System**: Windows 11 Home Single Language 64-bit
 - **CPU**: AMD Ryzen 3 7320U with Radeon Graphics (4 Cores, 8 Logical Processors)
-- **RAM**: 8.0 GB (7.23 GiB usable)
+- **RAM**: 8.0 GB (7.24 GB usable)
 - **GPU**: AMD Radeon(TM) Graphics (Integrated)
 - **Python Version**: 3.12.10
 - **Package Manager**: uv 0.13.5

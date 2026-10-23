@@ -1,0 +1,33 @@
+{
+  "os": "Windows 11 (64bit)",
+  "cpu": "AMD64 Family 23 Model 160 Stepping 0, AuthenticAMD",
+  "cpu_cores": 4,
+  "cpu_threads": 8,
+  "ram_gb": 7.24,
+  "gpu": "AMD Radeon(TM) Graphics",
+  "python": "3.12.10",
+  "ollama_version": "0.40.9",
+  "models": [
+    {
+      "name": "qwen3:4b",
+      "size": 2497293931,
+      "digest": "359d7dd4bcda",
+      "quantization": "Q4_K_M"
+    },
+    {
+      "name": "qwen3:1.7b",
+      "size": 1359293444,
+      "digest": "8f68893c685c",
+      "quantization": "Q4_K_M"
+    },
+    {
+      "name": "nomic-embed-text:latest",
+      "size": 274302450,
+      "digest": "0a109f422b47",
+      "quantization": "F16"
+    }
+  ],
+  "graphify_version": "0.9.95",
+  "external_apis": [],
+  "netguard_blocked": 0
+}

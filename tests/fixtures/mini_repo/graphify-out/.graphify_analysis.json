@@ -1,0 +1,203 @@
+{
+  "communities": {
+    "0": [
+      "app_utils",
+      "app_utils_parse_date",
+      "app_utils_rationale_1",
+      "app_utils_rationale_10",
+      "app_utils_rationale_15",
+      "app_utils_rationale_6",
+      "app_utils_retry",
+      "app_utils_slugify",
+      "datetime",
+      "re"
+    ],
+    "1": [
+      "app_passwords",
+      "app_passwords_hash_password",
+      "app_passwords_rationale_1",
+      "app_passwords_rationale_13",
+      "app_passwords_rationale_5",
+      "app_passwords_reset_password",
+      "app_tokens_rationale_21",
+      "app_tokens_revoke_tokens"
+    ],
+    "2": [
+      "app_auth_create_session",
+      "app_auth_login",
+      "app_auth_rationale_10",
+      "app_auth_rationale_6",
+      "app_passwords_rationale_9",
+      "app_passwords_verify_password",
+      "tests_test_auth_test_login_ok"
+    ],
+    "3": [
+      "app_auth_rationale_16",
+      "app_auth_verify_token",
+      "tests_test_auth",
+      "tests_test_auth_rationale_1",
+      "tests_test_auth_test_verify_token_expired"
+    ],
+    "4": [
+      "app_billing_apply_discount",
+      "app_billing_rationale_20",
+      "tests_test_billing",
+      "tests_test_billing_rationale_1",
+      "tests_test_billing_test_apply_discount_caps"
+    ],
+    "5": [
+      "app_billing_calculate_tax",
+      "app_billing_create_invoice",
+      "app_billing_rationale_10",
+      "app_billing_rationale_14",
+      "tests_test_billing_test_calculate_tax_rounding"
+    ],
+    "6": [
+      "app_auth",
+      "app_auth_rationale_1",
+      "app_tokens_is_expired",
+      "app_tokens_rationale_13"
+    ],
+    "7": [
+      "app_billing",
+      "app_billing_clamp_total",
+      "app_billing_rationale_1",
+      "app_billing_rationale_4"
+    ],
+    "8": [
+      "app_tokens",
+      "app_tokens_issue_token",
+      "app_tokens_rationale_1",
+      "app_tokens_rationale_17"
+    ],
+    "9": [
+      "app_tokens_decode_token",
+      "app_tokens_rationale_4"
+    ]
+  },
+  "cohesion": {
+    "0": 0.24444444444444444,
+    "1": 0.32142857142857145,
+    "2": 0.2857142857142857,
+    "3": 0.5,
+    "4": 0.5,
+    "5": 0.4,
+    "6": 0.5,
+    "7": 0.5,
+    "8": 0.5,
+    "9": 1.0
+  },
+  "gods": [
+    {
+      "id": "app_auth_login",
+      "label": "login()",
+      "degree": 6
+    },
+    {
+      "id": "app_auth_verify_token",
+      "label": "verify_token()",
+      "degree": 6
+    },
+    {
+      "id": "app_billing_calculate_tax",
+      "label": "calculate_tax()",
+      "degree": 5
+    },
+    {
+      "id": "app_billing_apply_discount",
+      "label": "apply_discount()",
+      "degree": 5
+    },
+    {
+      "id": "app_passwords_verify_password",
+      "label": "verify_password()",
+      "degree": 4
+    },
+    {
+      "id": "app_passwords_reset_password",
+      "label": "reset_password()",
+      "degree": 4
+    },
+    {
+      "id": "app_tokens_decode_token",
+      "label": "decode_token()",
+      "degree": 4
+    },
+    {
+      "id": "app_tokens_is_expired",
+      "label": "is_expired()",
+      "degree": 4
+    },
+    {
+      "id": "app_tokens_revoke_tokens",
+      "label": "revoke_tokens()",
+      "degree": 4
+    },
+    {
+      "id": "app_auth_create_session",
+      "label": "create_session()",
+      "degree": 3
+    }
+  ],
+  "surprises": [
+    {
+      "source": "test_login_ok()",
+      "target": "login()",
+      "source_files": [
+        "tests/test_auth.py",
+        "app/auth.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; peripheral node `test_login_ok()` unexpectedly reaches hub `login()`"
+    },
+    {
+      "source": "test_verify_token_expired()",
+      "target": "verify_token()",
+      "source_files": [
+        "tests/test_auth.py",
+        "app/auth.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; peripheral node `test_verify_token_expired()` unexpectedly reaches hub `verify_token()`"
+    },
+    {
+      "source": "test_calculate_tax_rounding()",
+      "target": "calculate_tax()",
+      "source_files": [
+        "tests/test_billing.py",
+        "app/billing.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; peripheral node `test_calculate_tax_rounding()` unexpectedly reaches hub `calculate_tax()`"
+    },
+    {
+      "source": "test_apply_discount_caps()",
+      "target": "apply_discount()",
+      "source_files": [
+        "tests/test_billing.py",
+        "app/billing.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; peripheral node `test_apply_discount_caps()` unexpectedly reaches hub `apply_discount()`"
+    },
+    {
+      "source": "verify_token()",
+      "target": "decode_token()",
+      "source_files": [
+        "app/auth.py",
+        "app/tokens.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

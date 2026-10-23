@@ -1,0 +1,37 @@
+{
+  "I1": {
+    "id": "I1",
+    "title": "Token remains valid after reset",
+    "issue_text": "After resetting my password I still get 'Invalid token' until I log out. Password reset should properly invalidate or revoke previous tokens.",
+    "gold_files": [
+      "app/passwords.py",
+      "app/tokens.py"
+    ],
+    "gold_symbols": [
+      "app/passwords.py::reset_password",
+      "app/tokens.py::revoke_tokens"
+    ]
+  },
+  "I2": {
+    "id": "I2",
+    "title": "Total calculation issue with extreme values",
+    "issue_text": "A 100% discount makes the invoice total negative when discounts exceed the total amount.",
+    "gold_files": [
+      "app/billing.py"
+    ],
+    "gold_symbols": [
+      "app/billing.py::_clamp_total"
+    ]
+  },
+  "I3": {
+    "id": "I3",
+    "title": "Crash on malformed token",
+    "issue_text": "User reported crash when receiving incoming tokens.\nTraceback (most recent call last):\n  File \"app/auth.py\", line 17, in verify_token\n    payload = decode_token(token)\n  File \"app/tokens.py\", line 8, in decode_token\n    raise ValueError(\"Malformed token string\")\nValueError: Malformed token string",
+    "gold_files": [
+      "app/tokens.py"
+    ],
+    "gold_symbols": [
+      "app/tokens.py::decode_token"
+    ]
+  }
+}
