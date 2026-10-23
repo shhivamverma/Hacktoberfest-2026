@@ -7,11 +7,35 @@
 | **Phase 0** | Environment, Tools & Raw Data Prep | **GREEN (PASS)** | ollama, graphify, curl embed, curl chat, click extract | RAM: 8GB, CPU: Ryzen 3 7320U, Graphify: 18.8s (click), qwen3:1.7b: 11.89 tok/s, qwen3:4b: 4.39 tok/s |
 | **Phase 1** | Skeleton, Graphify Adapter, Netguard, LLM Client | **GREEN (PASS)** | 8/8 tests in `tests/test_p1_*.py` | 54 nodes & 74 edges in fixture, netguard blocks 100% external, doctor writes RUN_ENV.json |
 | **Phase 2** | Hints, Retrieval, Thinnest E2E Flow | **GREEN (PASS)** | 8/8 tests in `tests/test_p2_*.py` | BM25 (k1=1.5, b=0.75), stacktrace boost=5.0, I2 regression anchor rank 6, Click trail in 2.85s (<3s) |
-| **Phase 3** | Graph Intelligence: PageRank, Blast Radius, Tests Finder, Tool Trace | Next | `pytest tests/test_p3_*.py` | - |
-| **Phase 4** | LLM Layer with Guardrails & Abstain | Pending | `pytest tests/test_p4_*.py tests/test_policy.py` | - |
+| **Phase 3** | Graph Intelligence: PageRank, Blast Radius, Tests Finder, Tool Trace | **GREEN (PASS)** | 7/7 tests in `tests/test_p3_*.py` (23/23 overall) | Dev Benchmark: Graph beats BM25 on Hit@3 (0.433 vs 0.133) and MRR (0.353 vs 0.113); 5,000-node graph expands in 0.05s |
+| **Phase 4** | LLM Layer with Guardrails & Abstain | Next | `pytest tests/test_p4_*.py tests/test_policy.py` | - |
 | **Phase 5** | Evaluation & Proof (Benchmark & Ablation) | Pending | `pytest tests/test_p5_*.py` | - |
 | **Phase 6** | Web UI, Trail Graph (SVG), Live Trace | Pending | `pytest tests/test_p6_*.py` | - |
 | **Phase 7** | Freeze, Package, Dogfood Graphify & Submit | Pending | `scripts/final_check.sh`, `pytest tests/test_submission_readiness.py` | - |
+
+---
+
+## Phase 3 Benchmark & Ablation Results (Dev Split, 30 cases)
+
+```
+| System | Hit@1 | Hit@3 | Hit@5 | MRR | Cases | Execution Time |
+|:---|:---|:---|:---|:---|:---|:---|
+| `bm25` | 0.000 | 0.133 | 0.300 | 0.113 | 30 | 5.63s |
+| `graph` | 0.200 | 0.433 | 0.567 | 0.353 | 30 | 15.01s |
+```
+
+- **Graph Multi-Hop Gain**:
+  - **Hit@1**: Increased from 0% to **20.0%** (+20.0%).
+  - **Hit@3**: Increased from 13.3% to **43.3%** (+30.0%).
+  - **Hit@5**: Increased from 30.0% to **56.7%** (+26.7%).
+  - **MRR (Mean Reciprocal Rank)**: Jumped from 0.113 to **0.353** (over **3.1x improvement**).
+- **Graph Expansion Performance**:
+  - Synthetic 5,000-node scale-free graph expands in **0.05s** (gate required < 1.5s).
+- **I2 Proof Case (`_clamp_total`)**:
+  - Pure BM25 alone ranked `_clamp_total` at #6 (outside top 5).
+  - Graph PageRank propagation along the `apply_discount -> _clamp_total` call edge brought `_clamp_total` into the top-5 candidates.
+- **Trace & Tool Calls**:
+  - Pipeline logs typed `ToolCall` records (`graph.search`, `graph.expand`, `code.snippet`, `graph.callers`, `tests.for_node`).
 
 ---
 
@@ -25,7 +49,6 @@
   - Custom pure-Python Okapi BM25 implementation ($k_1=1.5, b=0.75$).
   - Fast AST symbol & file lines cache accelerates graph indexing and span lookup to under 0.8s on a 3,100+ node repository.
   - Stacktrace boost (+5.0) guarantees that traceback-mentioned symbols rank #1 immediately (verified on I3: `decode_token`).
-  - Anchor regression verified: I2's gold `_clamp_total` is ranked #6 (outside top 5), setting up the graph expansion proof for Phase 3.
 - **Benchmark Dataset Generation**:
   - `bench/data/pallets_click.jsonl`: 30 cases
   - `bench/data/psf_requests.jsonl`: 30 cases
@@ -44,13 +67,7 @@
 - **Edge count**: 80
 - **Node keys**: `['_callable', '_origin', 'community', 'file_type', 'id', 'label', 'norm_label', 'source_file', 'source_location']`
 - **Relation types and counts**:
-  - `calls`: 16
-  - `imports`: 9
-  - `imports_from`: 6
-  - `references`: 1
-  - `contains`: 24
-  - `rationale_for`: 24
-- **Line info**: extracted via AST span locator (`app/utils.py`, `app/tokens.py`, `app/passwords.py`, `app/billing.py`, `app/auth.py`).
+  - `calls`: 16, `imports`: 9, `imports_from`: 6, `references`: 1, `contains`: 24, `rationale_for`: 24
 
 ### Probe Report on Click (`bench/repos/click/graphify-out/graph.json`)
 - **Node count**: 3,106
@@ -73,12 +90,3 @@
   - `nomic-embed-text`: 274 MB, Embedding Dimension = 768
   - `qwen3:1.7b`: 1.4 GB, Speed = ~11.89 tok/s on CPU
   - `qwen3:4b`: 2.5 GB, Speed = ~4.39 tok/s on CPU
-- **Cloned Benchmark Repositories & Graphify Extraction Timings**:
-  - `bench/repos/click`: 18.83s (`graphify-out/graph.json` = 2,451,840 bytes)
-  - `bench/repos/requests`: 11.55s
-  - `bench/repos/httpx`: 11.52s
-- **Raw Data Collected**:
-  - `bench/raw/pallets_click_prs.json`: 30 closed PRs (October 2026)
-  - `bench/raw/psf_requests_prs.json`: 30 closed PRs
-  - `bench/raw/encode_httpx_prs.json`: 30 closed PRs
-- **Graphify Community**: Discord invite confirmed at https://discord.gg/graphify
