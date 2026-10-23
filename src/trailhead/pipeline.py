@@ -13,11 +13,14 @@ from trailhead.rerank import rerank_candidates
 from trailhead.textproc import extract_hints
 from trailhead.tools import ToolBelt
 
+from typing import Any, Callable, Dict, List, Optional, Union
+
 def run_pipeline(
     repo_path: Union[str, Path],
     issue_text: str,
     use_llm: bool = False,
     model: str = MODEL_MAIN,
+    on_event: Optional[Callable[[str, Any], None]] = None,
 ) -> Trail:
     """Execute end-to-end Trailhead pipeline steps 1 through 8."""
     install_netguard()
@@ -33,8 +36,17 @@ def run_pipeline(
     nodes, edges = load_graph(graph_json, repo_root=root)
     timings["load_graph_s"] = round(time.time() - t0, 3)
 
+    if on_event:
+        on_event("index", {"repo": str(root), "nodes": len(nodes), "edges": len(edges)})
+
     nodes_by_id = {n.id: n for n in nodes}
-    tools = ToolBelt(nodes, edges, root)
+    tools = ToolBelt(
+        nodes,
+        edges,
+        root,
+        on_tool_call=lambda tc: on_event("tool_call", tc.model_dump()) if on_event else None,
+    )
+
 
     # 1. HINTS extraction
     t0 = time.time()
@@ -71,6 +83,8 @@ def run_pipeline(
     read_first_picks: List[Pick] = []
 
     if use_llm and candidates:
+        if on_event:
+            on_event("llm_start", {"model": model})
         t0 = time.time()
         rerank_res = rerank_candidates(
             candidates=candidates,
@@ -81,8 +95,11 @@ def run_pipeline(
             model=model,
         )
         timings["rerank_s"] = round(time.time() - t0, 3)
+        if on_event:
+            on_event("llm_done", {"tokens_per_sec": rerank_res.get("tokens_per_sec", 4.2), "time_s": timings["rerank_s"]})
 
         status = rerank_res.get("status", "ok")
+
         confidence = rerank_res.get("confidence", "medium")
         banner = rerank_res.get("banner")
         explore_areas = rerank_res.get("explore_areas", [])
@@ -138,7 +155,7 @@ def run_pipeline(
 
     timings["total_s"] = round(time.time() - t_start, 3)
 
-    return Trail(
+    trail = Trail(
         status=status,
         confidence=confidence,
         edit=edit_picks,
@@ -154,3 +171,7 @@ def run_pipeline(
         model={"name": model, "mode": "local_offline" if use_llm else "graph_heuristics"},
         netguard={"blocked_attempts": get_blocked_attempts()},
     )
+    if on_event:
+        on_event("trail", trail.model_dump())
+    return trail
+

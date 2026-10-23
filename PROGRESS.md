@@ -10,13 +10,31 @@
 | **Phase 3** | Graph Intelligence: PageRank, Blast Radius, Tests Finder, Tool Trace | **GREEN (PASS)** | 7/7 tests in `tests/test_p3_*.py` (23/23 overall) | Dev Benchmark: Graph beats BM25 on Hit@3 (0.433 vs 0.133) and MRR (0.353 vs 0.113); 5,000-node graph expands in 0.05s |
 | **Phase 4** | LLM Layer with Guardrails & Abstain | **GREEN (PASS)** | 13/13 tests in `tests/test_p4_*.py` & `test_policy.py` (35/35 overall) | V1-V5 guardrails active, zero hosted APIs, Ollama fallback <5s, Click real repo end-to-end in 172s, 3-run live evaluation on I1/I2/I3 passed |
 | **Phase 5** | Evaluation & Proof (Benchmark & Ablation) | **GREEN (PASS)** | 5/5 tests in `tests/test_p5_bench.py` (40/40 overall) | RESULTS.md generated with 3-run ablation; dev tuning MRR=0.4061; naive LLM hallucination=25.0% vs Trailhead=0.0% |
-| **Phase 6** | Web UI, Trail Graph (SVG), Live Trace | Next | `pytest tests/test_p6_*.py` | - |
-| **Phase 7** | Freeze, Package, Dogfood Graphify & Submit | Pending | `scripts/final_check.sh`, `pytest tests/test_submission_readiness.py` | - |
+| **Phase 6** | Web UI, Trail Graph (SVG), Live Trace | **GREEN (PASS)** | 5/5 tests in `tests/test_p6_ui.py` (44/44 overall) | Single-file UI, live SSE tool trace, pure-Python SVG radial graph, 0 external URLs, scripts/verify_offline.sh all green |
+| **Phase 7** | Freeze, Package, Dogfood Graphify & Submit | Next | `scripts/final_check.sh`, `pytest tests/test_submission_readiness.py` | - |
 
 
 ---
 
+## Phase 6 Web UI, Trail Graph (SVG) & Live Trace
+
+- **Zero External Dependencies**:
+  - `web/index.html`: 100% self-contained single-file HTML/CSS/JS without external CDNs, fonts, or tracking assets.
+  - Enforced by `test_html_has_no_external_urls` and `scripts/verify_offline.sh`.
+- **FastAPI SSE Streaming (`server.py`)**:
+  - `/api/trail`: Streams Server-Sent Events (`index`, `tool_call`, `llm_start`, `llm_done`, `trail`, `error`) enabling real-time terminal trace updates in the browser.
+  - `/api/status`: Real-time health check reporting model reachability and live `netguard.blocked_attempts`.
+- **Pure Python SVG Radial Graph (`render.py`)**:
+  - `render_trail_svg`: Generates valid XML SVG without client-side rendering libraries.
+  - Radial concentric layout: center ring for edit targets (coral) and read-first context (sky blue); outer ring for callers and callers-of-callers.
+- **Evidence Drawer & Usability**:
+  - Interactive collapsible drawer displaying real on-disk source lines with line numbers.
+  - One-click "Copy" for target pytest commands.
+
+---
+
 ## Phase 5 Benchmark & Ablation Results (Test Split, 3 Runs)
+
 
 ```
 | System | Hit@1 | Hit@3 | Hit@5 | MRR | tok/s | Hallucination Rate | Stability | Runs | Cases | Latency (s) |

@@ -229,7 +229,10 @@ def serve(
     port: int = typer.Option(8765, "--port", "-p", help="Port for web UI."),
 ):
     """Launch local web server with SSE live trace."""
-    console.print(f"Serving web UI for {repo} at http://127.0.0.1:{port}")
+    import uvicorn
+    console.print(f"[bold green]Starting Trailhead Web UI on http://127.0.0.1:{port}[/bold green]")
+    uvicorn.run("trailhead.server:app", host="127.0.0.1", port=port, log_level="info")
 
 if __name__ == "__main__":
     app()
+

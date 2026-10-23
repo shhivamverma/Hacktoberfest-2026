@@ -38,3 +38,7 @@
 {"system": "bm25", "case_id": "encode_httpx_3764", "run": 1, "hit@1": 0.0, "hit@3": 0.0, "hit@5": 0.0, "mrr": 0.0, "time_s": 0.082, "hallucinated": false}
 {"system": "graph", "case_id": "encode_httpx_3783", "run": 1, "hit@1": 1.0, "hit@3": 1.0, "hit@5": 1.0, "mrr": 1.0, "time_s": 0.261, "hallucinated": false}
 {"system": "graph", "case_id": "encode_httpx_3764", "run": 1, "hit@1": 0.0, "hit@3": 0.0, "hit@5": 0.0, "mrr": 0.0, "time_s": 0.283, "hallucinated": false}
+{"system": "bm25", "case_id": "encode_httpx_3783", "run": 1, "hit@1": 0.0, "hit@3": 0.0, "hit@5": 1.0, "mrr": 0.25, "time_s": 0.052, "hallucinated": false}
+{"system": "bm25", "case_id": "encode_httpx_3764", "run": 1, "hit@1": 0.0, "hit@3": 0.0, "hit@5": 0.0, "mrr": 0.0, "time_s": 0.062, "hallucinated": false}
+{"system": "graph", "case_id": "encode_httpx_3783", "run": 1, "hit@1": 1.0, "hit@3": 1.0, "hit@5": 1.0, "mrr": 1.0, "time_s": 0.272, "hallucinated": false}
+{"system": "graph", "case_id": "encode_httpx_3764", "run": 1, "hit@1": 0.0, "hit@3": 0.0, "hit@5": 0.0, "mrr": 0.0, "time_s": 0.293, "hallucinated": false}

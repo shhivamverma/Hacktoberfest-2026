@@ -18,7 +18,9 @@ ALLOWED_URL_PREFIXES = [
     "http://localhost",
     "https://127.0.0.1",
     "https://localhost",
+    "http://www.w3.org",
 ]
+
 
 def test_no_hosted_api_imports_or_references():
     """Verify src/ contains zero references to external hosted LLM provider libraries."""

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trailhead | Offline Issue-to-Code Trail Finder</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 26, 43, 0.75);
+      --card-border: rgba(56, 189, 248, 0.15);
+      --accent-coral: #ff5722;
+      --accent-cyan: #38bdf8;
+      --accent-blue: #0284c7;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --code-bg: #060911;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(11, 15, 25, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .logo-badge {
+      background: linear-gradient(135deg, var(--accent-coral), #f43f5e);
+      color: white;
+      font-weight: 900;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+    .logo-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo-tagline { font-size: 12px; color: var(--text-muted); }
+    .header-badges { display: flex; gap: 10px; align-items: center; }
+    .badge {
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 9999px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .badge-offline { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+    .badge-model { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); }
+    .badge-speed { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 440px 1fr;
+      gap: 24px;
+      padding: 24px 28px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+    }
+    .panel-title { font-size: 15px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; }
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    input, select, textarea {
+      background: #060911;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent-cyan); }
+    textarea { resize: vertical; min-height: 180px; font-family: ui-monospace, Menlo, Consolas, monospace; line-height: 1.4; }
+
+    .model-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .model-card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: all 0.2s;
+      background: #080d1a;
+    }
+    .model-card.active { border-color: var(--accent-cyan); background: rgba(56, 189, 248, 0.08); }
+    .model-card strong { font-size: 13px; }
+    .model-card span { font-size: 11px; color: var(--text-muted); }
+
+    .btn-find {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn-find:hover { opacity: 0.95; }
+    .btn-find:active { transform: scale(0.98); }
+    .btn-find:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Results Column */
+    .results-col { display: flex; flex-direction: column; gap: 18px; }
+
+    /* Live Trace Terminal */
+    .terminal-trace {
+      background: #050810;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 10px;
+      padding: 14px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      max-height: 190px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .trace-title { color: var(--text-muted); font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+    .trace-item { display: flex; justify-content: space-between; color: #a5f3fc; line-height: 1.4; }
+    .trace-item .ms { color: #64748b; font-size: 11px; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: center; }
+    .card-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .risk-badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+    .risk-low { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .risk-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .risk-high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    /* Pick Items */
+    .pick-list { display: flex; flex-direction: column; gap: 10px; }
+    .pick-item {
+      background: #060911;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .pick-summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .pick-summary:hover { background: rgba(255, 255, 255, 0.02); }
+    .pick-sym { font-weight: 700; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: #38bdf8; }
+    .pick-why { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .pick-drawer {
+      padding: 12px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      background: #030509;
+      display: none;
+    }
+    .pick-drawer.open { display: block; }
+    .pick-drawer pre {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #cbd5e1;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* Banner */
+    .confidence-banner {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+    }
+    .banner-low { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); display: block; }
+    .banner-graph-only { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); display: block; }
+
+    /* Code block */
+    .code-box {
+      background: #060911;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .btn-copy:hover { background: rgba(255, 255, 255, 0.16); }
+
+    /* Checklist */
+    .checklist-list { display: flex; flex-direction: column; gap: 6px; }
+    .checklist-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #cbd5e1; }
+    .checklist-item input { accent-color: var(--accent-cyan); }
+
+    /* SVG area */
+    .svg-container {
+      width: 100%;
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-area">
+      <div class="logo-badge">TRAILHEAD</div>
+      <div>
+        <div class="logo-title">Offline Issue-to-Code Trail Finder</div>
+        <div class="logo-tagline">Verified Graph-Grounding | Local Model | Zero Hosted APIs</div>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="badge badge-offline" id="netguardBadge">OFFLINE: 0 external attempts</div>
+      <div class="badge badge-model" id="modelBadge">Model: qwen3:4b</div>
+      <div class="badge badge-speed" id="speedBadge">Last Speed: - tok/s</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Input Form -->
+    <div class="panel">
+      <div class="panel-title">1. Select Target & Input Issue</div>
+
+      <div class="field-group">
+        <label for="repoPath">Repository Path</label>
+        <input type="text" id="repoPath" value="bench/repos/click" placeholder="Path to local repository on disk">
+      </div>
+
+      <div class="field-group">
+        <label for="modelSelect">Local Model Profile</label>
+        <div class="model-selector">
+          <div class="model-card active" id="card4b" onclick="selectModel('qwen3:4b')">
+            <strong>Qwen3 4B</strong>
+            <span>High precision (main)</span>
+          </div>
+          <div class="model-card" id="card17b" onclick="selectModel('qwen3:1.7b')">
+            <strong>Qwen3 1.7B</strong>
+            <span>Fast response profile</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="issueText">GitHub Issue Text</label>
+        <textarea id="issueText" placeholder="Paste GitHub issue description, error report, or reproduction steps here..."></textarea>
+      </div>
+
+      <button class="btn-find" id="findBtn" onclick="submitTrail()">
+        <span id="findBtnText">Find the Trail</span>
+      </button>
+
+      <div class="panel-title" style="margin-top: 10px;">Execution Trace</div>
+      <div class="terminal-trace" id="traceBox">
+        <div class="trace-title">LIVE TOOL TRACE</div>
+        <div class="trace-item" style="color: #64748b;">Ready. Waiting for input issue.</div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Evidence -->
+    <div class="results-col">
+      <!-- Confidence / Status Banner -->
+      <div class="confidence-banner" id="bannerBox"></div>
+
+      <!-- Edit Here Card -->
+      <div class="card" id="editCard">
+        <div class="card-header">
+          <div class="card-title">Edit Here (1-5 Candidate Code Units)</div>
+          <span style="font-size: 12px; color: var(--text-muted);">Click pick to expand disk snippet</span>
+        </div>
+        <div class="pick-list" id="editList">
+          <div style="color: var(--text-muted); font-size: 13px;">Run Trailhead to discover verified code units.</div>
+        </div>
+      </div>
+
+      <!-- Read First Card -->
+      <div class="card" id="readCard" style="display: none;">
+        <div class="card-header">
+          <div class="card-title">Read First (Required Context)</div>
+        </div>
+        <div class="pick-list" id="readList"></div>
+      </div>
+
+      <!-- Blast Radius & Test Node IDs -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="card" id="blastCard">
+          <div class="card-header">
+            <div class="card-title">Blast Radius (Inbound Impact)</div>
+          </div>
+          <div id="blastList" style="font-size: 13px; color: var(--text-muted);">
+            No callers calculated yet.
+          </div>
+        </div>
+
+        <div class="card" id="testCard">
+          <div class="card-header">
+            <div class="card-title">Tests to Run</div>
+          </div>
+          <div class="code-box">
+            <code id="testCmd">pytest</code>
+            <button class="btn-copy" onclick="copyTests()">Copy</button>
+          </div>
+          <div id="testItems" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;"></div>
+        </div>
+      </div>
+
+      <!-- Pre-PR Checklist -->
+      <div class="card" id="checklistCard">
+        <div class="card-header">
+          <div class="card-title">Before You Open the PR</div>
+        </div>
+        <div class="checklist-list" id="checklistItems">
+          <div class="checklist-item"><input type="checkbox"> Run local pytest test suite</div>
+          <div class="checklist-item"><input type="checkbox"> Check formatting and linting</div>
+        </div>
+      </div>
+
+      <!-- Trail SVG Visualization -->
+      <div class="card" id="svgCard">
+        <div class="card-header">
+          <div class="card-title">Trail Dependency Graph</div>
+        </div>
+        <div class="svg-container" id="svgContainer">
+          <span style="color: var(--text-muted); font-size: 13px;">Graph visualization will appear after trail computation.</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let activeModel = 'qwen3:4b';
+
+    function selectModel(m) {
+      activeModel = m;
+      document.getElementById('card4b').classList.toggle('active', m === 'qwen3:4b');
+      document.getElementById('card17b').classList.toggle('active', m === 'qwen3:1.7b');
+      document.getElementById('modelBadge').innerText = 'Model: ' + m;
+    }
+
+    async function checkStatus() {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          const blocked = data.netguard?.blocked_attempts || 0;
+          document.getElementById('netguardBadge').innerText = `OFFLINE: ${blocked} external attempts`;
+          if (data.model) document.getElementById('modelBadge').innerText = `Model: ${data.model}`;
+        }
+      } catch (e) {}
+    }
+    setInterval(checkStatus, 5000);
+    checkStatus();
+
+    function addTrace(name, summary, ms) {
+      const box = document.getElementById('traceBox');
+      const item = document.createElement('div');
+      item.className = 'trace-item';
+      item.innerHTML = `<span><strong>[tool]</strong> ${name}: ${summary || ''}</span><span class="ms">${ms ? ms + 'ms' : ''}</span>`;
+      box.appendChild(item);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function submitTrail() {
+      const repo = document.getElementById('repoPath').value.trim();
+      const issue = document.getElementById('issueText').value.trim();
+      if (!repo || !issue) {
+        alert('Please provide repository path and issue text.');
+        return;
+      }
+
+      const btn = document.getElementById('findBtn');
+      btn.disabled = true;
+      document.getElementById('findBtnText').innerText = 'Finding the trail...';
+
+      const box = document.getElementById('traceBox');
+      box.innerHTML = '<div class="trace-title">LIVE TOOL TRACE</div>';
+
+      try {
+        const response = await fetch('/api/trail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo, issue_text: issue, model: activeModel })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop();
+
+          for (const chunk of lines) {
+            if (!chunk.trim()) continue;
+            let event = 'message';
+            let data = '';
+
+            for (const line of chunk.split('\n')) {
+              if (line.startsWith('event: ')) event = line.slice(7).trim();
+              else if (line.startsWith('data: ')) data = line.slice(6).trim();
+            }
+
+            if (event === 'tool_call') {
+              try {
+                const tc = JSON.parse(data);
+                addTrace(tc.name, tc.result_summary, tc.ms);
+              } catch (e) {}
+            } else if (event === 'llm_start') {
+              addTrace('llm.infer', 'Starting schema-constrained reranking...', null);
+            } else if (event === 'llm_done') {
+              try {
+                const info = JSON.parse(data);
+                if (info.tokens_per_sec) {
+                  document.getElementById('speedBadge').innerText = `Last Speed: ${info.tokens_per_sec.toFixed(1)} tok/s`;
+                }
+              } catch (e) {}
+            } else if (event === 'trail') {
+              const trail = JSON.parse(data);
+              renderResults(trail);
+            } else if (event === 'error') {
+              alert('Error: ' + data);
+            }
+          }
+        }
+      } catch (err) {
+        alert('Request failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        document.getElementById('findBtnText').innerText = 'Find the Trail';
+      }
+    }
+
+    function renderResults(trail) {
+      // Banner
+      const banner = document.getElementById('bannerBox');
+      if (trail.status === 'graph_only') {
+        banner.className = 'confidence-banner banner-graph-only';
+        banner.innerText = trail.banner || 'Local model was unavailable; fell back to graph-only ranking.';
+      } else if (trail.status === 'low_confidence') {
+        banner.className = 'confidence-banner banner-low';
+        banner.innerText = trail.banner || 'Low confidence: explore broader areas or clarify with maintainer.';
+      } else {
+        banner.style.display = 'none';
+      }
+
+      // Edit picks
+      const editList = document.getElementById('editList');
+      editList.innerHTML = '';
+      (trail.edit || []).forEach((p, idx) => {
+        const item = document.createElement('div');
+        item.className = 'pick-item';
+        const loc = p.start && p.end ? `${p.file}:${p.start}-${p.end}` : p.file;
+        item.innerHTML = `
+          <div class="pick-summary" onclick="toggleDrawer(${idx})">
+            <div>
+              <div class="pick-sym">${p.alias}: ${p.node_id}</div>
+              <div class="pick-why">${p.why || 'Likely fix location'} &bull; <span style="color: #64748b;">${loc}</span></div>
+            </div>
+            <span style="color: var(--accent-cyan); font-size: 11px;">View snippet &darr;</span>
+          </div>
+          <div class="pick-drawer" id="drawer_${idx}">
+            <pre>${escapeHtml(p.snippet || '# No snippet on disk')}</pre>
+          </div>
+        `;
+        editList.appendChild(item);
+      });
+
+      // Read first picks
+      const readCard = document.getElementById('readCard');
+      const readList = document.getElementById('readList');
+      if (trail.read_first && trail.read_first.length > 0) {
+        readCard.style.display = 'flex';
+        readList.innerHTML = '';
+        trail.read_first.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'pick-item';
+          div.innerHTML = `<div class="pick-summary"><div class="pick-sym">${p.alias}: ${p.node_id}</div><div class="pick-why">${p.why}</div></div>`;
+          readList.appendChild(div);
+        });
+      } else {
+        readCard.style.display = 'none';
+      }
+
+      // Blast radius
+      const blastList = document.getElementById('blastList');
+      blastList.innerHTML = '';
+      if (trail.blast && trail.blast.length > 0) {
+        trail.blast.forEach(b => {
+          const riskClass = 'risk-' + (b.risk || 'low').toLowerCase();
+          const div = document.createElement('div');
+          div.style.marginBottom = '8px';
+          div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong>${b.target}</strong>
+              <span class="risk-badge ${riskClass}">${b.risk || 'low'}</span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+              ${b.total_count || 0} callers &bull; Direct: ${(b.callers || []).slice(0, 3).join(', ') || 'None'}
+            </div>
+          `;
+          blastList.appendChild(div);
+        });
+      } else {
+        blastList.innerText = 'No inbound callers identified.';
+      }
+
+      // Tests
+      const testCmd = document.getElementById('testCmd');
+      const testItems = document.getElementById('testItems');
+      if (trail.tests && trail.tests.length > 0) {
+        testCmd.innerText = 'pytest ' + trail.tests.slice(0, 4).join(' ');
+        testItems.innerHTML = trail.tests.map(t => `<div>&bull; ${t}</div>`).join('');
+      } else {
+        testCmd.innerText = 'pytest';
+        testItems.innerText = 'No specific 2-hop tests linked.';
+      }
+
+      // Checklist
+      const checklistItems = document.getElementById('checklistItems');
+      if (trail.checklist && trail.checklist.length > 0) {
+        checklistItems.innerHTML = trail.checklist.map(c => `
+          <div class="checklist-item"><input type="checkbox"> ${c}</div>
+        `).join('');
+      }
+
+      // Load SVG from API
+      fetch(`/api/svg?repo=${encodeURIComponent(trail.repo || document.getElementById('repoPath').value)}`)
+        .then(r => r.text())
+        .then(svg => {
+          document.getElementById('svgContainer').innerHTML = svg;
+        })
+        .catch(() => {});
+    }
+
+    function toggleDrawer(idx) {
+      const d = document.getElementById('drawer_' + idx);
+      if (d) d.classList.toggle('open');
+    }
+
+    function copyTests() {
+      const text = document.getElementById('testCmd').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Copied pytest command to clipboard!');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>

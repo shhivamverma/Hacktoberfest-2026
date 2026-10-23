@@ -13,12 +13,19 @@ from trailhead.textproc import extract_hints
 class ToolBelt:
     """Manages typed operations for code search, graph traversal, snippet reading, and test finding."""
 
-    def __init__(self, nodes: List[Node], edges: List[Edge], repo_root: Path):
+    def __init__(
+        self,
+        nodes: List[Node],
+        edges: List[Edge],
+        repo_root: Path,
+        on_tool_call: Optional[Callable[[ToolCall], None]] = None,
+    ):
         self.nodes = nodes
         self.edges = edges
         self.repo_root = repo_root
         self.nodes_by_id = {n.id: n for n in nodes}
         self.trace: List[ToolCall] = []
+        self.on_tool_call = on_tool_call
 
     def _record(self, name: str, args: Dict[str, Any], fn: Callable[[], Any], summary_fn: Optional[Callable[[Any], str]] = None) -> Any:
         t0 = time.time()
@@ -33,15 +40,21 @@ class ToolBelt:
         finally:
             ms = round((time.time() - t0) * 1000, 2)
             summary = summary_fn(res) if summary_fn and ok else ("ok" if ok else "failed")
-            self.trace.append(
-                ToolCall(
-                    name=name,
-                    args=args,
-                    result_summary=str(summary),
-                    ms=ms,
-                    ok=ok,
-                )
+            tc = ToolCall(
+                name=name,
+                args=args,
+                result_summary=str(summary),
+                ms=ms,
+                ok=ok,
             )
+            self.trace.append(tc)
+            if self.on_tool_call:
+                try:
+                    self.on_tool_call(tc)
+                except Exception:
+                    pass
+            return res
+
 
     def search_graph(self, issue_text: str) -> Dict[str, float]:
         """Tool 'graph.search': Run lexical BM25 retrieval across code nodes."""
