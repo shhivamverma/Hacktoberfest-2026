@@ -9,6 +9,9 @@ from typing import Dict, List, Optional, Tuple, Union
 from trailhead.config import EDGE_WEIGHTS, SNIPPET_LINES
 from trailhead.models import Edge, Node
 
+_FILE_SYMBOL_CACHE: Dict[str, Dict[str, Tuple[int, int]]] = {}
+_FILE_LINES_CACHE: Dict[str, List[str]] = {}
+
 def normalize_label(label: str) -> str:
     """Normalize label, e.g. stripping trailing parentheses while preserving qualified names."""
     if not label:
@@ -41,48 +44,49 @@ def map_relation(raw_rel: str) -> Tuple[str, float]:
         return "imports", EDGE_WEIGHTS.get("imports", 0.5)
     return "other", EDGE_WEIGHTS.get("other", 0.3)
 
-def _find_symbol_ast(tree: ast.AST, symbol_name: str) -> Optional[Tuple[int, int]]:
-    """Locate symbol line range in AST tree."""
-    # Match exact name or attribute qualified suffix
-    target_name = symbol_name.split(".")[-1]
-    
-    for item in ast.walk(tree):
-        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            if item.name == target_name or item.name == symbol_name:
+def _index_file_symbols(file_path: Path) -> Dict[str, Tuple[int, int]]:
+    """Parse file once and index all top-level and inner symbol line ranges."""
+    cache_key = str(file_path.resolve())
+    if cache_key in _FILE_SYMBOL_CACHE:
+        return _FILE_SYMBOL_CACHE[cache_key]
+
+    symbols: Dict[str, Tuple[int, int]] = {}
+    if not file_path.exists() or file_path.suffix.lower() != ".py":
+        _FILE_SYMBOL_CACHE[cache_key] = symbols
+        return symbols
+
+    try:
+        source_code = file_path.read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(source_code, filename=str(file_path))
+        for item in ast.walk(tree):
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 end_lineno = getattr(item, "end_lineno", item.lineno)
-                return item.lineno, end_lineno
-    return None
+                symbols[item.name] = (item.lineno, end_lineno)
+    except Exception:
+        pass
+
+    _FILE_SYMBOL_CACHE[cache_key] = symbols
+    return symbols
 
 def locate_span(node: Node, repo_root: Union[str, Path]) -> Tuple[Optional[int], Optional[int]]:
     """Locate start and end line of the node symbol using Python's ast module."""
     if not node.file:
         return None, None
-        
+
     full_path = Path(repo_root) / node.file
-    if not full_path.exists() or not full_path.is_file():
+    symbols = _index_file_symbols(full_path)
+    if not symbols:
         return None, None
 
-    if not full_path.suffix.lower() == ".py":
-        # Non-python fallback to file level
-        return None, None
-
-    try:
-        source_code = full_path.read_text(encoding="utf-8", errors="replace")
-        tree = ast.parse(source_code, filename=str(full_path))
-    except Exception:
-        return None, None
-
-    # Try normalized label first, then last segment of node id
     candidates_to_try = [
         node.label,
         normalize_label(node.label),
+        normalize_label(node.label).split(".")[-1],
         node.id.split("_")[-1],
     ]
     for name in candidates_to_try:
-        if name:
-            span = _find_symbol_ast(tree, name)
-            if span:
-                return span
+        if name in symbols:
+            return symbols[name]
 
     return None, None
 
@@ -94,10 +98,15 @@ def snippet(node: Node, repo_root: Union[str, Path], max_lines: int = SNIPPET_LI
     if not full_path.exists() or not full_path.is_file():
         return ""
 
-    try:
-        lines = full_path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except Exception:
-        return ""
+    cache_key = str(full_path.resolve())
+    if cache_key in _FILE_LINES_CACHE:
+        lines = _FILE_LINES_CACHE[cache_key]
+    else:
+        try:
+            lines = full_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            _FILE_LINES_CACHE[cache_key] = lines
+        except Exception:
+            return ""
 
     if not lines:
         return ""
@@ -114,7 +123,11 @@ def snippet(node: Node, repo_root: Union[str, Path], max_lines: int = SNIPPET_LI
 
     return "\n".join(selected)
 
-def load_graph(json_path: Union[str, Path], repo_root: Optional[Union[str, Path]] = None) -> Tuple[List[Node], List[Edge]]:
+def load_graph(
+    json_path: Union[str, Path],
+    repo_root: Optional[Union[str, Path]] = None,
+    populate_spans: bool = True,
+) -> Tuple[List[Node], List[Edge]]:
     """Load nodes and edges from graphify graph.json, supporting both 'links' and 'edges'."""
     p = Path(json_path)
     if not p.exists():
@@ -145,7 +158,7 @@ def load_graph(json_path: Union[str, Path], repo_root: Optional[Union[str, Path]
             community=community,
         )
 
-        if root.exists():
+        if populate_spans and root.exists() and source_file.endswith(".py"):
             start, end = locate_span(n, root)
             n.start = start
             n.end = end

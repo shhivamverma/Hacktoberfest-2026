@@ -23,69 +23,79 @@
       "app_tokens_revoke_tokens"
     ],
     "2": [
-      "app_auth_create_session",
-      "app_auth_login",
-      "app_auth_rationale_10",
-      "app_auth_rationale_6",
-      "app_passwords_rationale_9",
-      "app_passwords_verify_password",
-      "tests_test_auth_test_login_ok"
+      "app_billing",
+      "app_billing_apply_discount",
+      "app_billing_clamp_total",
+      "app_billing_rationale_1",
+      "app_billing_rationale_20",
+      "app_billing_rationale_4"
     ],
     "3": [
-      "app_auth_rationale_16",
-      "app_auth_verify_token",
-      "tests_test_auth",
-      "tests_test_auth_rationale_1",
-      "tests_test_auth_test_verify_token_expired"
+      "app_tokens",
+      "app_tokens_decode_token",
+      "app_tokens_issue_token",
+      "app_tokens_rationale_1",
+      "app_tokens_rationale_17",
+      "app_tokens_rationale_4"
     ],
     "4": [
-      "app_billing_apply_discount",
-      "app_billing_rationale_20",
-      "tests_test_billing",
-      "tests_test_billing_rationale_1",
-      "tests_test_billing_test_apply_discount_caps"
+      "app_auth_login",
+      "app_auth_rationale_10",
+      "tests_test_auth",
+      "tests_test_auth_rationale_1",
+      "tests_test_auth_test_login_ok"
     ],
     "5": [
-      "app_billing_calculate_tax",
-      "app_billing_create_invoice",
-      "app_billing_rationale_10",
-      "app_billing_rationale_14",
-      "tests_test_billing_test_calculate_tax_rounding"
-    ],
-    "6": [
       "app_auth",
       "app_auth_rationale_1",
       "app_tokens_is_expired",
       "app_tokens_rationale_13"
     ],
+    "6": [
+      "app_billing_calculate_tax",
+      "app_billing_rationale_10",
+      "tests_test_billing_rationale_10",
+      "tests_test_billing_test_calculate_tax_rounding"
+    ],
     "7": [
-      "app_billing",
-      "app_billing_clamp_total",
-      "app_billing_rationale_1",
-      "app_billing_rationale_4"
+      "app_billing_create_invoice",
+      "app_billing_rationale_14",
+      "tests_test_billing_rationale_15",
+      "tests_test_billing_test_create_invoice_total_amount"
     ],
     "8": [
-      "app_tokens",
-      "app_tokens_issue_token",
-      "app_tokens_rationale_1",
-      "app_tokens_rationale_17"
+      "tests_test_billing",
+      "tests_test_billing_rationale_1",
+      "tests_test_billing_rationale_5",
+      "tests_test_billing_test_apply_discount_caps"
     ],
     "9": [
-      "app_tokens_decode_token",
-      "app_tokens_rationale_4"
+      "app_auth_rationale_16",
+      "app_auth_verify_token",
+      "tests_test_auth_test_verify_token_expired"
+    ],
+    "10": [
+      "app_auth_create_session",
+      "app_auth_rationale_6"
+    ],
+    "11": [
+      "app_passwords_rationale_9",
+      "app_passwords_verify_password"
     ]
   },
   "cohesion": {
     "0": 0.24444444444444444,
     "1": 0.32142857142857145,
-    "2": 0.2857142857142857,
-    "3": 0.5,
+    "2": 0.4,
+    "3": 0.3333333333333333,
     "4": 0.5,
-    "5": 0.4,
+    "5": 0.5,
     "6": 0.5,
     "7": 0.5,
     "8": 0.5,
-    "9": 1.0
+    "9": 0.6666666666666666,
+    "10": 1.0,
+    "11": 1.0
   },
   "gods": [
     {
@@ -104,28 +114,18 @@
       "degree": 5
     },
     {
+      "id": "app_billing_create_invoice",
+      "label": "create_invoice()",
+      "degree": 5
+    },
+    {
       "id": "app_billing_apply_discount",
       "label": "apply_discount()",
       "degree": 5
     },
     {
-      "id": "app_passwords_verify_password",
-      "label": "verify_password()",
-      "degree": 4
-    },
-    {
       "id": "app_passwords_reset_password",
       "label": "reset_password()",
-      "degree": 4
-    },
-    {
-      "id": "app_tokens_decode_token",
-      "label": "decode_token()",
-      "degree": 4
-    },
-    {
-      "id": "app_tokens_is_expired",
-      "label": "is_expired()",
       "degree": 4
     },
     {
@@ -134,9 +134,19 @@
       "degree": 4
     },
     {
-      "id": "app_auth_create_session",
-      "label": "create_session()",
-      "degree": 3
+      "id": "app_passwords_verify_password",
+      "label": "verify_password()",
+      "degree": 4
+    },
+    {
+      "id": "app_tokens_is_expired",
+      "label": "is_expired()",
+      "degree": 4
+    },
+    {
+      "id": "app_tokens_decode_token",
+      "label": "decode_token()",
+      "degree": 4
     }
   ],
   "surprises": [
@@ -163,17 +173,6 @@
       "why": "connects across different repos/directories; peripheral node `test_verify_token_expired()` unexpectedly reaches hub `verify_token()`"
     },
     {
-      "source": "test_calculate_tax_rounding()",
-      "target": "calculate_tax()",
-      "source_files": [
-        "tests/test_billing.py",
-        "app/billing.py"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "calls",
-      "why": "connects across different repos/directories; peripheral node `test_calculate_tax_rounding()` unexpectedly reaches hub `calculate_tax()`"
-    },
-    {
       "source": "test_apply_discount_caps()",
       "target": "apply_discount()",
       "source_files": [
@@ -182,18 +181,29 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "calls",
-      "why": "connects across different repos/directories; peripheral node `test_apply_discount_caps()` unexpectedly reaches hub `apply_discount()`"
+      "why": "connects across different repos/directories; bridges separate communities"
     },
     {
-      "source": "verify_token()",
-      "target": "decode_token()",
+      "source": "test_calculate_tax_rounding()",
+      "target": "calculate_tax()",
       "source_files": [
-        "app/auth.py",
-        "app/tokens.py"
+        "tests/test_billing.py",
+        "app/billing.py"
       ],
       "confidence": "EXTRACTED",
       "relation": "calls",
-      "why": "bridges separate communities"
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "test_create_invoice_total_amount()",
+      "target": "create_invoice()",
+      "source_files": [
+        "tests/test_billing.py",
+        "app/billing.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
     }
   ],
   "tokens": {

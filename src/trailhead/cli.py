@@ -4,6 +4,8 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -13,27 +15,32 @@ from rich.console import Console
 from rich.table import Table
 
 from trailhead.config import OLLAMA_HOST
+from trailhead.graphio import load_graph
 from trailhead.netguard import get_blocked_attempts, install_netguard
+from trailhead.retrieve import retrieve_nodes
+from trailhead.textproc import extract_hints
 
 app = typer.Typer(help="Trailhead: Offline issue-to-code trail finder for open-source contributors.")
 console = Console(legacy_windows=False)
 
-def get_graphify_version() -> str:
-    """Return installed Graphify CLI version."""
+def get_graphify_bin() -> str:
+    """Find path to Graphify executable."""
     candidate = shutil.which("graphify")
     if not candidate:
         win_local = Path(os.path.expanduser("~")) / ".local" / "bin" / "graphify.exe"
         if win_local.exists():
             candidate = str(win_local)
+    return candidate or "graphify"
 
-    if candidate:
-        try:
-            res = subprocess.run([candidate, "--version"], capture_output=True, text=True, timeout=5)
-            out = res.stdout.strip() or res.stderr.strip()
-            return out.split()[-1] if out else "installed"
-        except Exception:
-            return "installed"
-    return "not found"
+def get_graphify_version() -> str:
+    """Return installed Graphify CLI version."""
+    candidate = get_graphify_bin()
+    try:
+        res = subprocess.run([candidate, "--version"], capture_output=True, text=True, timeout=5)
+        out = res.stdout.strip() or res.stderr.strip()
+        return out.split()[-1] if out else "installed"
+    except Exception:
+        return "not found"
 
 def get_ollama_info() -> Dict[str, Any]:
     """Query local Ollama instance for version and models."""
@@ -142,17 +149,79 @@ def doctor(
 def index(
     repo: str = typer.Argument(".", help="Path to repository to index.")
 ):
-    """Index a repository using Graphify."""
-    console.print(f"Indexing repository at {repo}...")
+    """Index a repository using Graphify extract, cluster-only and export html."""
+    install_netguard()
+    graphify_bin = get_graphify_bin()
+    target_repo = Path(repo).resolve()
+
+    if not target_repo.exists():
+        console.print(f"[bold red]Error: repository path '{repo}' does not exist.[/bold red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold cyan]1. Extracting code AST graph with Graphify...[/bold cyan]")
+    t0 = time.time()
+    subprocess.run([graphify_bin, "extract", str(target_repo), "--code-only"], check=True)
+    t_extract = time.time() - t0
+
+    console.print(f"[bold cyan]2. Running cluster-only analysis...[/bold cyan]")
+    try:
+        subprocess.run([graphify_bin, "cluster-only", str(target_repo), "--no-label"], check=False)
+    except Exception:
+        pass
+
+    console.print(f"[bold cyan]3. Exporting visual graph.html...[/bold cyan]")
+    try:
+        subprocess.run([graphify_bin, "export", "html"], cwd=str(target_repo), check=False)
+    except Exception:
+        pass
+
+    out_json = target_repo / "graphify-out" / "graph.json"
+    console.print(f"[bold green][OK] Index complete in {t_extract:.2f}s! Graph saved to {out_json}[/bold green]")
 
 @app.command()
 def trail(
     repo: str = typer.Option(".", "--repo", "-r", help="Path to indexed repository."),
-    issue: str = typer.Option(..., "--issue", "-i", help="Issue text or path to issue file."),
+    issue: str = typer.Option(..., "--issue", "-i", help="Issue text, path to issue file, or '-' for stdin."),
     no_llm: bool = typer.Option(False, "--no-llm", help="Run in graph-only mode without LLM."),
 ):
-    """Find contribution trail for an issue."""
-    console.print(f"Finding trail for {repo}...")
+    """Find contribution trail for an issue (thinnest E2E flow)."""
+    install_netguard()
+    repo_path = Path(repo).resolve()
+    
+    # 1. Resolve issue text
+    if issue == "-":
+        issue_text = sys.stdin.read()
+    elif Path(issue).exists() and Path(issue).is_file():
+        issue_text = Path(issue).read_text(encoding="utf-8", errors="replace")
+    else:
+        issue_text = issue
+
+    # 2. Locate graph.json
+    graph_path = repo_path / "graphify-out" / "graph.json"
+    if not graph_path.exists():
+        console.print(f"[bold red]Error: graph.json not found at {graph_path}. Run 'trailhead index {repo}' first.[/bold red]")
+        raise typer.Exit(code=1)
+
+    nodes, edges = load_graph(graph_path, repo_root=repo_path)
+    hints = extract_hints(issue_text)
+    scores = retrieve_nodes(nodes, issue_text, hints=hints)
+
+    # Filter to code nodes with positive scores
+    ranked_nodes = sorted(
+        [n for n in nodes if n.kind in ("function", "class") and scores.get(n.id, 0.0) > 0.0],
+        key=lambda n: scores.get(n.id, 0.0),
+        reverse=True,
+    )
+
+    # Print markdown table
+    print("\n# Trailhead Contribution Trail (No-LLM Retrieval Mode)\n")
+    print(f"**Repository**: `{repo_path.name}` | **Identified Hints**: {len(hints)}\n")
+    print("| Rank | Target Function / Symbol | File | Lines | BM25 Score |")
+    print("|:---|:---|:---|:---|:---|")
+    for rank, node in enumerate(ranked_nodes[:10], start=1):
+        lines_str = f"L{node.start}-{node.end}" if node.start and node.end else "file-level"
+        print(f"| {rank} | `{node.label}` | `{node.file}` | {lines_str} | {scores.get(node.id, 0.0):.3f} |")
+    print()
 
 @app.command()
 def serve(
@@ -160,7 +229,7 @@ def serve(
     port: int = typer.Option(8765, "--port", "-p", help="Port for web UI."),
 ):
     """Launch local web server with SSE live trace."""
-    console.print(f"Serving web UI at port {port}...")
+    console.print(f"Serving web UI for {repo} at http://127.0.0.1:{port}")
 
 if __name__ == "__main__":
     app()
