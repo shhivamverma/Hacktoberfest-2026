@@ -88,3 +88,14 @@ class ToolBelt:
             fn=lambda: find_tests_for_symbol(node_id, self.nodes, self.edges),
             summary_fn=lambda r: f"{len(r)} tests linked",
         )
+
+    def rewrite_query(self, issue_text: str, model: str = "qwen3:4b") -> List[str]:
+        """Tool 'query.rewrite': Local LLM extracts developer code keywords."""
+        from trailhead.rerank import rewrite_query
+        return self._record(
+            name="query.rewrite",
+            args={"chars": min(len(issue_text), 1500)},
+            fn=lambda: rewrite_query(issue_text, model=model),
+            summary_fn=lambda r: f"extracted {len(r)} keywords: {', '.join(r[:3])}" if r else "no keywords",
+        )
+

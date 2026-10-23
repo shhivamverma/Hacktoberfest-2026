@@ -72,7 +72,7 @@ def chat(
     last_error: Optional[Exception] = None
     for attempt in range(retries + 1):
         try:
-            with httpx.Client(timeout=timeout) as client:
+            with httpx.Client(timeout=httpx.Timeout(timeout, connect=1.0)) as client:
                 res = client.post(f"{active_host}/api/chat", json=payload)
                 res.raise_for_status()
                 data = res.json()
@@ -98,6 +98,9 @@ def chat(
             }
         except Exception as e:
             last_error = e
+            # If server connection is refused / timed out, do not retry
+            if isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
+                break
             if attempt < retries:
                 # Retry once with stricter prompt instruction and temperature 0
                 payload["options"]["temperature"] = 0.0
@@ -107,6 +110,7 @@ def chat(
                     ]
 
     raise RuntimeError(f"Ollama chat failed after {retries + 1} attempts: {last_error}")
+
 
 def embed(
     texts: Union[str, List[str]],

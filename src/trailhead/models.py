@@ -62,6 +62,7 @@ class Trail(BaseModel):
     checklist: List[str] = Field(default_factory=list)
     explore_areas: List[str] = Field(default_factory=list)
     clarifying_question: Optional[str] = None
+    banner: Optional[str] = None
     trace: List[ToolCall] = Field(default_factory=list)
     timing: Dict[str, float] = Field(default_factory=dict)
     model: Dict[str, Any] = Field(default_factory=dict)
