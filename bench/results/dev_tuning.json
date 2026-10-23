@@ -1,0 +1,41 @@
+{
+  "dev_case_ids": [
+    "encode_httpx_3783",
+    "encode_httpx_3764",
+    "encode_httpx_3748",
+    "encode_httpx_3739",
+    "encode_httpx_3720",
+    "encode_httpx_3711",
+    "encode_httpx_3698",
+    "encode_httpx_3692",
+    "encode_httpx_3685",
+    "encode_httpx_3682",
+    "pallets_click_3884",
+    "pallets_click_3874",
+    "pallets_click_3871",
+    "pallets_click_3867",
+    "pallets_click_3864",
+    "pallets_click_3861",
+    "pallets_click_3857",
+    "pallets_click_3853",
+    "pallets_click_3850",
+    "pallets_click_3844",
+    "psf_requests_7628",
+    "psf_requests_7608",
+    "psf_requests_7598",
+    "psf_requests_7591",
+    "psf_requests_7588",
+    "psf_requests_7584",
+    "psf_requests_7581",
+    "psf_requests_7576",
+    "psf_requests_7571",
+    "psf_requests_7561"
+  ],
+  "best_fusion": {
+    "retrieval": 0.7,
+    "graph": 0.3
+  },
+  "best_abstain_margin": 0.08,
+  "dev_mrr": 0.4061,
+  "split": "dev"
+}

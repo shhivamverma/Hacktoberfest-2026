@@ -28,3 +28,19 @@ def mrr(predictions: Sequence[str], gold: Sequence[str]) -> float:
         if pred in gold_set:
             return 1.0 / float(rank)
     return 0.0
+
+def hallucination_rate(named_symbols: Sequence[str], valid_symbols: Sequence[str]) -> float:
+    """Return fraction of named symbols that do not exist in the ground truth code graph."""
+    if not named_symbols:
+        return 0.0
+    valid_set = set(valid_symbols)
+    hallucinated = sum(1 for s in named_symbols if s not in valid_set)
+    return hallucinated / float(len(named_symbols))
+
+def top_k_stability(runs_predictions: Sequence[Sequence[str]], k: int = 3) -> float:
+    """Return 1.0 if top-k predictions are identical across all repeated runs, else 0.0."""
+    if len(runs_predictions) <= 1:
+        return 1.0
+    first_top_k = tuple(runs_predictions[0][:k])
+    return 1.0 if all(tuple(r[:k]) == first_top_k for r in runs_predictions[1:]) else 0.0
+

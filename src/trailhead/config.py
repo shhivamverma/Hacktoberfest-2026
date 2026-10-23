@@ -26,6 +26,7 @@ EDGE_WEIGHTS = {
     "other": 0.3,
 }
 
-FUSION = {"retrieval": 0.5, "graph": 0.5}  # tuned on dev set
+FUSION = {"retrieval": 0.7, "graph": 0.3}  # tuned on dev set
 STACKTRACE_BOOST = 5.0
 ABSTAIN_MARGIN = 0.08  # tuned on dev
+

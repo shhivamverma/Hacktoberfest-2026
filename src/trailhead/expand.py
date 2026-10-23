@@ -126,6 +126,8 @@ def expand_candidates(
     edges: List[Edge],
     retrieval_scores: Dict[str, float],
     top_candidates_count: int = CANDIDATES,
+    weight_retrieval: Optional[float] = None,
+    weight_graph: Optional[float] = None,
 ) -> List[Candidate]:
     """Fuse lexical BM25 and graph Personalized PageRank to select top candidates with multi-file diversity."""
     nodes_by_id = {n.id: n for n in nodes}
@@ -135,8 +137,9 @@ def expand_candidates(
     norm_r = _normalize_scores(retrieval_scores)
     norm_g = _normalize_scores(ppr_scores)
 
-    w_r = FUSION.get("retrieval", 0.5)
-    w_g = FUSION.get("graph", 0.5)
+    w_r = weight_retrieval if weight_retrieval is not None else FUSION.get("retrieval", 0.5)
+    w_g = weight_graph if weight_graph is not None else FUSION.get("graph", 0.5)
+
 
     fused_scores: Dict[str, float] = {}
     for n in nodes:
