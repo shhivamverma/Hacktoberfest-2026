@@ -67,6 +67,7 @@ Trailhead takes a repository and GitHub issue text, and produces a verified **Co
 - **Graph is the Ground Truth, Model is the Judge**: Candidate symbols are extracted by Graphify's AST parser. The model only picks among aliases `[C1..Cn]` via schema-constrained decoding. It cannot cite non-existent code units.
 - **Graph-Guided Multi-Hop Search on Tiny Models**: Personalized PageRank propagates relevance across code relationships without requiring giant fine-tuned cloud models.
 - **Provably Offline**: `netguard.py` intercepts sockets at runtime and enforces zero external calls. The live UI header badge displays "OFFLINE: 0 external connection attempts".
+- **Animated Orbital Dependency Graph (`trail.svg`)**: Concentric orbit visualization with revolving candidate symbols, upright counter-rotating labels, glowing neon halos, and hover-to-pause inspection built with pure SVG CSS keyframes (100% offline, zero JavaScript).
 
 ---
 
@@ -94,8 +95,8 @@ Trailhead takes a repository and GitHub issue text, and produces a verified **Co
 ### 2. Environment Setup & Model Pulls
 ```bash
 # Clone the repository
-git clone https://github.com/shivamverma/trailhead.git
-cd trailhead
+git clone https://github.com/shhivamverma/Hacktoberfest-2026.git
+cd Hacktoberfest-2026
 
 # Sync local virtual environment
 uv sync
@@ -111,8 +112,11 @@ uv tool install graphifyy
 
 ### 3. Index a Repository
 ```bash
-# Generate offline code graph
+# Generate offline code graph (required once per codebase)
 trailhead index /path/to/local/repo
+
+# Example: index a cloned repository
+trailhead index "C:\Users\...\Desktop\fetch-ai"
 ```
 
 ### 4. Run CLI or Web UI
@@ -120,10 +124,33 @@ trailhead index /path/to/local/repo
 # Run CLI trail generator (with Wi-Fi off!)
 trailhead trail --repo /path/to/local/repo --issue "Issue description text"
 
-# Launch interactive Web UI with live tool trace
+# Launch interactive Web UI with live SSE trace and animated orbit graph
 trailhead serve --repo /path/to/local/repo --port 8765
 # Open http://127.0.0.1:8765 in any browser
 ```
+
+### 5. Production Deployment (Vercel + Render + Docker)
+
+Trailhead provides ready-to-deploy configurations for multi-platform hosting:
+
+- **Frontend (Vercel)**:
+  - Import the repository on [Vercel](https://vercel.com/new).
+  - Configured via [`vercel.json`](file:///c:/Users/SHIVAM%20VERMA/Desktop/Hacktober/vercel.json) to deploy `src/trailhead/web` with zero build configuration.
+- **Backend (Render)**:
+  - Create a Web Service on [Render](https://dashboard.render.com).
+  - Pre-configured via [`render.yaml`](file:///c:/Users/SHIVAM%20VERMA/Desktop/Hacktober/render.yaml) and [`requirements.txt`](file:///c:/Users/SHIVAM%20VERMA/Desktop/Hacktober/requirements.txt):
+    `uvicorn trailhead.server:app --host 0.0.0.0 --port $PORT`
+  - CORS middleware is enabled to accept cross-origin requests from Vercel.
+- **Docker Container**:
+  - Multi-stage [`Dockerfile`](file:///c:/Users/SHIVAM%20VERMA/Desktop/Hacktober/Dockerfile) for 1-command deployment:
+    ```bash
+    docker build -t trailhead .
+    docker run -p 8765:8765 trailhead
+    ```
+- **Connecting Frontend to Backend**:
+  - On the Vercel dashboard, click the **`⚙ Backend`** badge in the top navigation bar.
+  - Enter your Render backend URL (e.g. `https://your-backend.onrender.com`).
+  - The UI instantly switches to remote mode and streams traces and animated graphs directly from your backend.
 
 ---
 
