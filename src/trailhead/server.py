@@ -23,7 +23,17 @@ from trailhead.netguard import get_blocked_attempts
 from trailhead.pipeline import run_pipeline
 from trailhead.render import render_trail_svg
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Trailhead", description="Offline issue-to-code trail finder")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _WEB_DIR = Path(__file__).parent / "web"
 _ROOT_DIR = Path(__file__).resolve().parent.parent.parent

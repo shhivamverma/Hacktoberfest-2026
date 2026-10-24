@@ -275,6 +275,7 @@
       </div>
     </div>
     <div class="header-badges">
+      <button class="badge" id="backendBtn" style="cursor: pointer; border: 1px dashed var(--accent-cyan); color: var(--text);" onclick="promptBackendUrl()">⚙ Backend</button>
       <div class="badge badge-offline" id="netguardBadge">OFFLINE: 0 external attempts</div>
       <div class="badge badge-model" id="modelBadge">Model: qwen3:4b</div>
       <div class="badge badge-speed" id="speedBadge">Last Speed: - tok/s</div>
@@ -401,9 +402,38 @@
       document.getElementById('modelBadge').innerText = 'Model: ' + m;
     }
 
+    function getApiBase() {
+      const custom = localStorage.getItem('trailhead_api_url');
+      if (custom) return custom.replace(/\/+$/, '');
+      return '';
+    }
+
+    function promptBackendUrl() {
+      const current = localStorage.getItem('trailhead_api_url') || '';
+      const val = prompt('Enter backend API URL (e.g. your Render deployment):\nLeave blank to use same-origin / relative /api', current);
+      if (val !== null) {
+        if (val.trim()) {
+          localStorage.setItem('trailhead_api_url', val.trim());
+        } else {
+          localStorage.removeItem('trailhead_api_url');
+        }
+        updateBackendBadge();
+        checkStatus();
+      }
+    }
+
+    function updateBackendBadge() {
+      const custom = localStorage.getItem('trailhead_api_url');
+      const btn = document.getElementById('backendBtn');
+      if (btn) {
+        btn.innerText = custom ? '⚙ Backend: Remote' : '⚙ Backend';
+        btn.title = custom ? ('API: ' + custom) : 'Using local / same-origin API';
+      }
+    }
+
     async function checkStatus() {
       try {
-        const res = await fetch('/api/status');
+        const res = await fetch(`${getApiBase()}/api/status`);
         if (res.ok) {
           const data = await res.json();
           const blocked = data.netguard?.blocked_attempts || 0;
@@ -412,6 +442,7 @@
         }
       } catch (e) {}
     }
+    updateBackendBadge();
     setInterval(checkStatus, 5000);
     checkStatus();
 
@@ -440,7 +471,7 @@
       box.innerHTML = '<div class="trace-title">LIVE TOOL TRACE</div>';
 
       try {
-        const response = await fetch('/api/trail', {
+        const response = await fetch(`${getApiBase()}/api/trail`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ repo, issue_text: issue, model: activeModel })
@@ -592,7 +623,7 @@
       }
 
       // Load SVG from API
-      fetch(`/api/svg?repo=${encodeURIComponent(trail.repo || document.getElementById('repoPath').value)}`)
+      fetch(`${getApiBase()}/api/svg?repo=${encodeURIComponent(trail.repo || document.getElementById('repoPath').value)}`)
         .then(r => r.text())
         .then(svg => {
           document.getElementById('svgContainer').innerHTML = svg;
