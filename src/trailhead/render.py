@@ -132,12 +132,13 @@ def render_trail_svg(trail: Trail, width: int = 800, height: int = 560) -> str:
 
         color = "#FF5722" if p.role == "edit" else "#03A9F4"
         stroke = "#FF8A65" if p.role == "edit" else "#81D4FA"
+        pulse_class = "pulse-edit" if p.role == "edit" else "pulse-read"
         label = html.escape(p.node_id.split("::")[-1] or p.alias)
 
-        # Center pick node
+        # Center pick node with counter-rotation so labels remain upright
         nodes_svg.append(
-            f'<g class="node pick-node">'
-            f'<circle cx="{px:.1f}" cy="{py:.1f}" r="22" fill="{color}" stroke="{stroke}" stroke-width="2.5" />'
+            f'<g class="node pick-node" style="transform-origin: {px:.1f}px {py:.1f}px;">'
+            f'<circle cx="{px:.1f}" cy="{py:.1f}" r="22" fill="{color}" stroke="{stroke}" stroke-width="2.5" class="{pulse_class}" />'
             f'<text x="{px:.1f}" y="{py + 4:.1f}" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">{p.alias}</text>'
             f'<text x="{px:.1f}" y="{py + 36:.1f}" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">{label[:18]}</text>'
             f'</g>'
@@ -167,7 +168,7 @@ def render_trail_svg(trail: Trail, width: int = 800, height: int = 560) -> str:
         label = html.escape(c_name.split("::")[-1])
 
         nodes_svg.append(
-            f'<g class="node caller-node">'
+            f'<g class="node caller-node" style="transform-origin: {ox:.1f}px {oy:.1f}px;">'
             f'<circle cx="{ox:.1f}" cy="{oy:.1f}" r="15" fill="#2d3748" stroke="#4a5568" stroke-width="2" />'
             f'<text x="{ox:.1f}" y="{oy + 25:.1f}" fill="#a0aec0" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">{label[:14]}</text>'
             f'</g>'
@@ -179,16 +180,70 @@ def render_trail_svg(trail: Trail, width: int = 800, height: int = 560) -> str:
         p2 = pick_positions.get(dst)
         if p1 and p2:
             lines_svg.append(
-                f'<line x1="{p1[0]:.1f}" y1="{p1[1]:.1f}" x2="{p2[0]:.1f}" y2="{p2[1]:.1f}" stroke="#4a5568" stroke-width="1.5" stroke-dasharray="3,3" />'
+                f'<line x1="{p1[0]:.1f}" y1="{p1[1]:.1f}" x2="{p2[0]:.1f}" y2="{p2[1]:.1f}" stroke="#4a5568" stroke-width="1.5" stroke-dasharray="3,3" class="flow-line" />'
             )
 
     svg_content = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">\n'
+        f'<defs>\n'
+        f'<style>\n'
+        f'@keyframes orbitClockwise {{\n'
+        f'  from {{ transform: rotate(0deg); }}\n'
+        f'  to {{ transform: rotate(360deg); }}\n'
+        f'}}\n'
+        f'@keyframes orbitCounter {{\n'
+        f'  from {{ transform: rotate(0deg); }}\n'
+        f'  to {{ transform: rotate(-360deg); }}\n'
+        f'}}\n'
+        f'@keyframes pulseGlowEdit {{\n'
+        f'  0%, 100% {{ filter: drop-shadow(0 0 3px rgba(255, 87, 34, 0.4)); }}\n'
+        f'  50% {{ filter: drop-shadow(0 0 12px rgba(255, 87, 34, 0.9)); }}\n'
+        f'}}\n'
+        f'@keyframes pulseGlowRead {{\n'
+        f'  0%, 100% {{ filter: drop-shadow(0 0 3px rgba(3, 169, 244, 0.4)); }}\n'
+        f'  50% {{ filter: drop-shadow(0 0 12px rgba(3, 169, 244, 0.9)); }}\n'
+        f'}}\n'
+        f'@keyframes dashTrack {{\n'
+        f'  to {{ stroke-dashoffset: -24; }}\n'
+        f'}}\n'
+        f'.orbit-group {{\n'
+        f'  transform-origin: {cx:.1f}px {cy:.1f}px;\n'
+        f'  animation: orbitClockwise 40s linear infinite;\n'
+        f'}}\n'
+        f'.orbit-group:hover, .orbit-group:hover * {{\n'
+        f'  animation-play-state: paused !important;\n'
+        f'}}\n'
+        f'.pick-node, .caller-node {{\n'
+        f'  animation: orbitCounter 40s linear infinite;\n'
+        f'  cursor: pointer;\n'
+        f'}}\n'
+        f'.pulse-edit {{\n'
+        f'  animation: pulseGlowEdit 3s ease-in-out infinite;\n'
+        f'}}\n'
+        f'.pulse-read {{\n'
+        f'  animation: pulseGlowRead 3s ease-in-out infinite;\n'
+        f'}}\n'
+        f'.orbit-ring {{\n'
+        f'  animation: dashTrack 16s linear infinite;\n'
+        f'}}\n'
+        f'.flow-line {{\n'
+        f'  animation: dashTrack 3s linear infinite;\n'
+        f'}}\n'
+        f'.pick-node circle {{\n'
+        f'  transition: transform 0.2s ease, stroke-width 0.2s ease;\n'
+        f'}}\n'
+        f'.pick-node:hover circle {{\n'
+        f'  stroke-width: 4px;\n'
+        f'}}\n'
+        f'</style>\n'
+        f'</defs>\n'
         f'<rect width="100%" height="100%" fill="#0f172a" rx="10"/>\n'
-        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{inner_radius:.1f}" fill="none" stroke="#1e293b" stroke-width="1" stroke-dasharray="4,4"/>\n'
-        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{outer_radius:.1f}" fill="none" stroke="#1e293b" stroke-width="1" stroke-dasharray="4,4"/>\n'
+        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{inner_radius:.1f}" class="orbit-ring" fill="none" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="6,6"/>\n'
+        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{outer_radius:.1f}" class="orbit-ring" fill="none" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="6,6"/>\n'
+        f'<g id="radial-orbit" class="orbit-group">\n'
         f'<g id="connections">\n' + "\n".join(lines_svg) + f'\n</g>\n'
         f'<g id="nodes">\n' + "\n".join(nodes_svg) + f'\n</g>\n'
+        f'</g>\n'
         f'<text x="20" y="30" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="12" font-weight="600">Trailhead Dependency Trail</text>\n'
         f'<circle cx="28" cy="50" r="6" fill="#FF5722"/>\n'
         f'<text x="40" y="54" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10">Edit Target</text>\n'
