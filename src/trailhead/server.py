@@ -90,6 +90,22 @@ def get_svg(repo: Optional[str] = Query(default=None)):
         svg_content = render_trail_svg(dummy_trail)
     return Response(content=svg_content, media_type="image/svg+xml")
 
+@app.get("/api/graph", response_class=HTMLResponse)
+@app.get("/graphify", response_class=HTMLResponse)
+def get_complex_graph(repo: Optional[str] = Query(default=None)):
+    """Return full complex interactive Graphify visualizer (437 nodes, 973 edges, 15 communities)."""
+    if repo:
+        repo_path = Path(repo)
+        candidate = repo_path / "graphify-out" / "graph.html"
+        if candidate.exists():
+            return HTMLResponse(content=candidate.read_text(encoding="utf-8"))
+
+    root_graph = _ROOT_DIR / "graphify-out" / "graph.html"
+    if root_graph.exists():
+        return HTMLResponse(content=root_graph.read_text(encoding="utf-8"))
+
+    raise HTTPException(status_code=404, detail="graphify-out/graph.html not found")
+
 @app.post("/api/trail")
 async def stream_trail(payload: Dict[str, Any] = Body(...)):
     """Execute pipeline and stream Server-Sent Events (SSE) live to client."""

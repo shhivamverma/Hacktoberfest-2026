@@ -9,6 +9,7 @@ from trailhead.gitinfo import get_recent_commits
 from trailhead.graphio import load_graph
 from trailhead.models import Candidate, Pick, ToolCall, Trail
 from trailhead.netguard import get_blocked_attempts, install_netguard
+from trailhead.repo_manager import resolve_repository
 from trailhead.rerank import rerank_candidates
 from trailhead.textproc import extract_hints
 from trailhead.tools import ToolBelt
@@ -23,14 +24,12 @@ def run_pipeline(
     on_event: Optional[Callable[[str, Any], None]] = None,
 ) -> Trail:
     """Execute end-to-end Trailhead pipeline steps 1 through 8."""
-    install_netguard()
     t_start = time.time()
     timings: Dict[str, float] = {}
 
-    root = Path(repo_path).resolve()
+    root = resolve_repository(repo_path, on_event=on_event)
+    install_netguard()
     graph_json = root / "graphify-out" / "graph.json"
-    if not graph_json.exists():
-        raise FileNotFoundError(f"Missing graph.json in {graph_json}. Run 'trailhead index' first.")
 
     t0 = time.time()
     nodes, edges = load_graph(graph_json, repo_root=root)

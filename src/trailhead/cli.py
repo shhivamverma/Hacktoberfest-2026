@@ -17,6 +17,7 @@ from rich.table import Table
 from trailhead.config import OLLAMA_HOST
 from trailhead.graphio import load_graph
 from trailhead.netguard import get_blocked_attempts, install_netguard
+from trailhead.repo_manager import resolve_repository
 from trailhead.retrieve import retrieve_nodes
 from trailhead.textproc import extract_hints
 
@@ -184,11 +185,16 @@ def trail(
     issue: str = typer.Option(..., "--issue", "-i", help="Issue text, path to issue file, or '-' for stdin."),
     no_llm: bool = typer.Option(False, "--no-llm", help="Run in graph-only mode without LLM."),
 ):
-    """Find contribution trail for an issue (thinnest E2E flow)."""
+    # 1. Resolve repository & index
+    try:
+        repo_path = resolve_repository(repo)
+    except Exception as e:
+        console.print(f"[bold red]Error resolving repository '{repo}': {e}[/bold red]")
+        raise typer.Exit(code=1)
+
     install_netguard()
-    repo_path = Path(repo).resolve()
     
-    # 1. Resolve issue text
+    # 2. Resolve issue text
     if issue == "-":
         issue_text = sys.stdin.read()
     elif Path(issue).exists() and Path(issue).is_file():
@@ -196,7 +202,7 @@ def trail(
     else:
         issue_text = issue
 
-    # 2. Locate graph.json
+    # 3. Locate graph.json
     graph_path = repo_path / "graphify-out" / "graph.json"
     if not graph_path.exists():
         console.print(f"[bold red]Error: graph.json not found at {graph_path}. Run 'trailhead index {repo}' first.[/bold red]")
